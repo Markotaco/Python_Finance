@@ -1,0 +1,19 @@
+1. Open the file 'stock_input_file.xlsx'
+
+2. In the sheet 'stock_sheet', fill in the stock ticker of the stocks you would like to use. Please use Yahoo Finance's stock tickers, otherwise, the program will be inaccurate (ie. AAPL for Apple, and VOW3.DE for Volkswagen). Note that non-US stock tickers normally have a suffix.
+
+3. In the sheet 'stock_sheet', fill in the amount invested in each associated stock. If stocks are in different currencies, please ensure that the inputted amounts are converted to the same currency.
+
+4. In the sheet 'other_parameters', please fill in the annualised risk-free rate you would like to use. If you are unsure, the '1-Year US Treasury yield' is a good reference.
+
+5. In the sheet 'other_parameters', please select the time interval/type of returns you are looking at from the dropdown list. The available options are: 1 Day, 5 Days, 1 Week, 1 Month and 3 Months.
+
+6. In the sheet 'other_parameters', please select the start and end date of the data you would like to base the returns on. Be aware that more datapoints can give more accurate results, but companies can also significantly change over a long enough period of time.
+
+7. Save the 'stock_input_file.xlsx', and go to your file directory where the file 'Python_Finance' is located. Right click on the 'Python_Finance' file, and select 'New Terminal at Folder'. A Terminal window should pop up.
+
+8. Copy and paste the following line into the Terminal window: python -m Sharpe_ratio_excel.py
+
+9. Once the program is finished running, go into the 'Python_Finance' folder, and go into the 'Excel_Outputs' folder.
+
+10. A new Excel file will be generated, with the Sharpe Ratio, Portfolio Expected Return and Portfolio Volatility calculated. The other sheets display the input values given for the results. If you do not wish to keep any of the output files, you may delete them. DO NOT delete the 'Excel_Outputs' folder.
