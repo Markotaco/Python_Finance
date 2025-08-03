@@ -10,10 +10,10 @@
 
 6. In the sheet 'other_parameters', please select the start and end date of the data you would like to base the returns on. Be aware that more datapoints can give more accurate results, but companies can also significantly change over a long enough period of time.
 
-7. Save the 'stock_input_file.xlsx', and go to your file directory where the file 'Python_Finance' is located. Right click on the 'Python_Finance' file, and select 'New Terminal at Folder'. A Terminal window should pop up.
+7. Save the 'stock_input_file.xlsx', and go to your file directory where the file 'Excel_Sharpe' is located. Right click on the 'Excel_Sharpe' file, and select 'New Terminal at Folder'. A Terminal window should pop up.
 
 8. Copy and paste the following line into the Terminal window: python -m Sharpe_ratio_excel.py
 
-9. Once the program is finished running, go into the 'Python_Finance' folder, and go into the 'Excel_Outputs' folder.
+9. Once the program is finished running, go into the 'Excel_Sharpe' folder, and go into the 'Excel_Outputs' folder.
 
 10. A new Excel file will be generated, with the Sharpe Ratio, Portfolio Expected Return and Portfolio Volatility calculated. The other sheets display the input values given for the results. If you do not wish to keep any of the output files, you may delete them. DO NOT delete the 'Excel_Outputs' folder.
