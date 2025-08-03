@@ -9,7 +9,7 @@
 
 # ## Necessary Libraries
 
-# In[1]:
+# In[23]:
 
 
 import numpy as np
@@ -22,16 +22,16 @@ import datetime as dt
 
 # First, the program will read in the stock names and amount invested from the excel sheet as a pandas dataframe. After which, the ticker names will be stored as an array for use in the downloading of the stock data
 
-# In[2]:
+# In[24]:
 
 
 # Reading in stock data from pandas dataframe
 stock_details_excel = pd.read_excel("stock_input_file.xlsx",
-                                    sheet_name="stock_sheet")
+                                    sheet_name="stock_sheet").sort_values(by="Stock Ticker")
 stock_details_excel
 
 
-# In[3]:
+# In[25]:
 
 
 # Extracting the names as an array and storing it as a variable
@@ -43,7 +43,7 @@ stock_names_array
 
 # The user would input the amount they have invested into each asset, but what the program needs is the weight of the asset with regards to the whole portfolio
 
-# In[4]:
+# In[26]:
 
 
 # Extracting the values from the datadrame, turning it into an array, before dividing by the sum of the values to get the weights
@@ -55,7 +55,7 @@ stock_weights_array
 
 # The program will also need the other relevant data inputted by the user, such as the annual risk-free rate, the time interval the user is looking at and the start and end date of the data the user would like to base their returns off
 
-# In[5]:
+# In[27]:
 
 
 other_parameters = pd.read_excel("stock_input_file.xlsx",
@@ -63,7 +63,7 @@ other_parameters = pd.read_excel("stock_input_file.xlsx",
 other_parameters
 
 
-# In[6]:
+# In[28]:
 
 
 # Extracting the risk-free rate
@@ -87,7 +87,7 @@ print(f"Ending Date of Data: {end_date}")
 
 # The data will be taken from yfinance, an open source API for historical stock price data. The closing price will be used since that reflects the state of the stocks once the variations during the day has passed over. The return of the stock is simply the percentage change in the stock's closing price from the previous period.
 
-# In[7]:
+# In[29]:
 
 
 # Using yf.download to get the data of multiple stocks' closing prices. After that using the pct_change method to get the percentage change in the stock's price from the previous period.
@@ -106,7 +106,7 @@ stock_returns
 # 
 # In a sample, this translates to $\bar{X_i}$ instead of $E[r_i]$
 
-# In[8]:
+# In[30]:
 
 
 # Getting the sample mean of each stock
@@ -115,7 +115,7 @@ exp_return = stock_returns.mean()
 exp_return_array = np.array(exp_return)
 
 
-# In[9]:
+# In[31]:
 
 
 # Getting the weighted expected returns by multiplying the weights to the sample means
@@ -135,7 +135,7 @@ portfolio_expected_return
 # 
 # In a sample, this would be replaced by sample variances and covariances. The right degrees of freedom are already considered by the method by default
 
-# In[10]:
+# In[32]:
 
 
 # Getting the covariance matrix from the stock data
@@ -143,7 +143,7 @@ stock_returns_cov = stock_returns.cov()
 stock_returns_cov
 
 
-# In[11]:
+# In[33]:
 
 
 # Generating the weights matrix, which consists of a matrix mulitplication between the weights array and its transpose
@@ -153,7 +153,7 @@ stock_weights_matrix
 
 # The scalar multiplication of the above matrices, followed by a summation accross all elements of the resulting matrix, will give one the portfolio variance as described in the equation above.
 
-# In[12]:
+# In[34]:
 
 
 # Multiplying the two matrices, and then getting the sum over all rows, then columns
@@ -164,7 +164,7 @@ portfolio_variance
 # After obtaining the variance of a portfolio, the standard deviation can be given by:
 # $$\sigma = \sqrt{var(Return)}$$
 
-# In[13]:
+# In[35]:
 
 
 # Obtaining the standard deviation of the portfolio
@@ -182,7 +182,7 @@ portfolio_sd
 
 # To obtain an appropriate risk-free rate that has been adjusted for the time period the user specified to look at, the annual risk-free rate given by the user needs to be adjusted to fit their time period. Thus, a function will help to do this
 
-# In[14]:
+# In[36]:
 
 
 # Creating a function to adjust the annual risk-free rate according to the time interval specified by the user. This ensures a consistent risk-free rate used
@@ -213,7 +213,7 @@ def rf_adjuster(rf_input, time_interval):
     return rf_adjusted
 
 
-# In[15]:
+# In[37]:
 
 
 # Getting the adjusted risk-free rate
@@ -221,7 +221,7 @@ adjusted_risk_free_rate = rf_adjuster(risk_free_rate, return_type)
 adjusted_risk_free_rate
 
 
-# In[16]:
+# In[38]:
 
 
 # Getting the Sharpe ratio as defined above
@@ -231,19 +231,19 @@ sharpe_ratio
 
 # ## Portfolio's Final Metrics
 
-# In[17]:
+# In[39]:
 
 
 print(f"The Portfolio's Sharpe Ratio is {round(sharpe_ratio, 4)}")
 
 
-# In[18]:
+# In[40]:
 
 
 print(f"The Portfolio's Expected Return for the time interval of '{return_type}' is {round(portfolio_expected_return*100, 2)}%")
 
 
-# In[19]:
+# In[41]:
 
 
 print(f"The Portfolio's Volatility for the time interval of '{return_type}' is {round(portfolio_sd*100, 2)}%")
@@ -253,7 +253,7 @@ print(f"The Portfolio's Volatility for the time interval of '{return_type}' is {
 
 # These metrics can also be written into output excel file for easier viewing. This can be done with pandas, but that means that the data first needs to be wrapped up in a dataframe
 
-# In[20]:
+# In[42]:
 
 
 # Storing the data to show in lists
@@ -268,7 +268,7 @@ metric_table
 
 # It would also be useful to write in a separate sheet the input details of what the user gave to the programme, so that it would be easier for the user to keep track of their excel outputs. For this the pandas dataframes already exist, which are the original input tables `stock_details_excel` and `other_paramters`. However, `other_parameters`'s datetimes need to be first turned into dates only
 
-# In[21]:
+# In[43]:
 
 
 # Getting today's date and current time at which the file is generated
