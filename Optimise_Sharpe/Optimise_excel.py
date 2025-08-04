@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 import datetime as dt
+import scipy.optimize as opt
 
 
 # ## Importing data from stock_sheet
@@ -25,7 +26,7 @@ import datetime as dt
 # In[2]:
 
 
-# Reading in stock data from pandas dataframe
+# Reading in stock data from pandas dataframe, and sorting the tickers by alphabetical orders
 stock_details_excel = pd.read_excel("stock_input_file.xlsx",
                                     sheet_name="stock_sheet").sort_values(by="Stock Ticker")
 stock_details_excel
@@ -229,67 +230,178 @@ sharpe_ratio = (portfolio_expected_return - adjusted_risk_free_rate)/portfolio_s
 sharpe_ratio
 
 
-# ## Portfolio's Final Metrics
+# ## Optimisation of the Portfolio
+
+# The program can be taken one step further, and be used to generate the investments amounts and weights needed to obtain an optimal portfolio. The portfolio will be optimised by maximising the portfolio's Sharpe Ratio
+
+# For the optimisation code to work, an objective function for the Sharpe Ratio needs to be created. This function will consist of two smaller functions:
+# 1. A function calculating the expected return of the portfolio
+# 2. A function calculating the volatility of the portfolio
+
+# ### Expected Return Function
 
 # In[17]:
 
 
-print(f"The Portfolio's Sharpe Ratio is {round(sharpe_ratio, 4)}")
+# Function takes a dataframe and a weight array
+def expected_return_cal(df, weight):
+    # Individual stock's expected return
+    indiv_return = np.array(df.mean())
+    # Portfolio expected return
+    port_return = (indiv_return*weight).sum()
+    # Returning the expected return of the portfolio
+    return port_return
 
+
+# ### Portfolio Volatility Function
 
 # In[18]:
 
 
-print(f"The Portfolio's Expected Return for the time interval of '{return_type}' is {round(portfolio_expected_return*100, 2)}%")
+# Function takes a dataframe and a weight array
+def volatility_cal(df, weight):
+    # Generating the covariance matrix
+    stock_cov = df.cov()
+    # Generating the weight matrix
+    weight_matrix = np.outer(weight, weight)
+    # Scalar multiplication of both matrices, and then summing all elements to get the portfolio variance
+    port_var = (stock_cov * weight_matrix).sum().sum()
+    # Taking the standard deviation of the variance
+    port_vol = np.sqrt(port_var)
+    return port_vol
 
+
+# ### Sharpe Ratio Function
 
 # In[19]:
 
 
-print(f"The Portfolio's Volatility for the time interval of '{return_type}' is {round(portfolio_sd*100, 2)}%")
+# Risk-free rate used is adjusted for by the input parameters
+effective_rf = rf_adjuster(risk_free_rate, return_type)
+# Function takes a dataframe and a weight array
+def sharpe_ratio_cal(df, weight):
+    # Sharpe ratio is the expected return minu the risk-free rate, divided by the standard deviation
+    sharpe = (expected_return_cal(df, weight) - effective_rf)/volatility_cal(df, weight)
+    return sharpe
 
 
-# ## Writing the metrics into an excel output file
+# ### Optimisation using scipy.opt
 
-# These metrics can also be written into output excel file for easier viewing. This can be done with pandas, but that means that the data first needs to be wrapped up in a dataframe
+# Before using the `opt.minimize` function, there are some things that need to be defined:
 
 # In[20]:
 
 
-# Storing the data to show in lists
-metric_name = ['Sharpe Ratio', f'Portfolio Expected Return ({return_type})', 'Portfolio Volatility']
-metric_value = [round(sharpe_ratio, 4), round(portfolio_expected_return, 4), round(portfolio_sd, 4)]
+# Defining the constarint, which is that all weights need to sum to 1
+def weight_constraint(weight):
+    return weight.sum() - 1
 
-# Creating the dataframe
-metric_table = pd.DataFrame({'Metric Name': metric_name,
-                             'Value': metric_value})
-metric_table
+# Defining the starting state of the list in which to store the bounds
+bnds = []
+
+# The list of bounds should be the size of the number of stocks. Each iteration of the loop will store the extracted maximum portfolio weight as the upper limit and 0 as the lower limit
+for i, row in stock_details_excel.iterrows():
+    bnds.append((0, row["Max Portfolio Weight"]))
+
+# Defining the constraint for the the minimise function
+con = {"type":"eq", "fun":weight_constraint}
 
 
-# It would also be useful to write in a separate sheet the input details of what the user gave to the programme, so that it would be easier for the user to keep track of their excel outputs. For this the pandas dataframes already exist, which are the original input tables `stock_details_excel` and `other_paramters`. However, `other_parameters`'s datetimes need to be first turned into dates only
+# Now the optimisation can be done
 
 # In[21]:
 
 
-# Getting today's date and current time at which the file is generated
-date_today = dt.datetime.today().strftime('%Y-%m-%d--%H%M%S')
-# Transforming the start and end datetimes into dates only
-other_parameters['Start Date'][0] = other_parameters['Start Date'][0].date()
-other_parameters['End Date'][0] = other_parameters['End Date'][0].date()
-# Using the excel writer object
-with pd.ExcelWriter(f"Excel_Outputs/Output-{date_today}.xlsx") as writer:
-    # Writing the metrics into a excel sheet
-    metric_table.to_excel(writer,
-                         sheet_name='Metrics',
-                         index=False)
-    # Adding a sheet of the inputted stocks into the written excel sheet after sorting the values back in alphabetical order
-    stock_details_excel.sort_index().to_excel(writer,
-                         sheet_name='Inputted Stocks',
-                         index=False)
-    # Adding a sheet of the other parameters given by the useer
-    other_parameters.to_excel(writer,
-                         sheet_name='Inputted Misc.',
-                         index=False)
+# Initial guess value from inputted weights
+x_0 = stock_weights_array
+
+# Constrained maximisation of the Sharpe Ratio
+result = opt.minimize(lambda x: -sharpe_ratio_cal(stock_returns, x),
+                     constraints=con,
+                     bounds=bnds,
+                     x0=x_0)
+print(result)
+
+
+# Compiling the information into a pandas datadrame:
+
+# In[22]:
+
+
+# Adding the current weight of the stocks in the portfolio
+stock_details_excel.insert(1, "Current Weight", x_0)
+# Adding the optimal portfolio weight
+stock_details_excel["Optimal Weight"] = result.x
+# Getting the sum of the total value invested
+portfolio_sum = stock_details_excel["Amount Invested"].sum()
+# Getting the optimal value invested in each stock
+stock_details_excel["Optimal Investment"] = round(stock_details_excel["Optimal Weight"] * portfolio_sum, 2)
+# Rounding the optimal weights to 10 decimal places
+stock_details_excel["Optimal Weight"] = round(stock_details_excel["Optimal Weight"], 10)
+# Arranging the dataframe according to the original index for better tacking for the user
+stock_details_excel = stock_details_excel.sort_index()
+stock_details_excel
+
+
+# One can also use the previously defined functions to get the optimal portfolio's expected return, volatility and sharpe ratio
+
+# In[23]:
+
+
+opt_return = expected_return_cal(stock_returns,result.x)
+opt_volatility = volatility_cal(stock_returns, result.x)
+opt_sharpe = -result.fun
+
+
+# ## Writing the metrics into an excel output file
+
+# These metrics can now be written into output excel file for easier viewing, and be compared to the original portfolio's metrics This can be done with pandas, but that means that the data first needs to be wrapped up in a dataframe
+
+# In[24]:
+
+
+# Storing the data to show in lists
+metric_name = ['Sharpe Ratio', f'Portfolio Expected Return ({return_type})', 'Portfolio Volatility']
+current_metric_value = [round(sharpe_ratio, 4), round(portfolio_expected_return, 4), round(portfolio_sd, 4)]
+optimal_metric_value = [round(opt_sharpe, 4), round(opt_return, 4), round(opt_volatility, 4)]
+
+# Creating the dataframe
+metric_table = pd.DataFrame({'Metric Name': metric_name,
+                             'Current Portfolio': current_metric_value,
+                            'Optimal Portfolio': optimal_metric_value})
+metric_table
+
+
+# It would also be useful to write in a separate sheet the input details of what the user gave to the programme, so that it would be easier for the user to keep track of their excel outputs. For this the pandas dataframes already exist, which are the original input tables `stock_details_excel` and `other_paramters`. However, `other_parameters`'s datetimes need to be first turned into dates only. The writing of the metrics data to an excel file should only be done if the optimisation was successul
+
+# In[25]:
+
+
+# Only write the data to the excel file if the optimisation was successful
+if result.success == True:
+    # Getting today's date and current time at which the file is generated
+    date_today = dt.datetime.today().strftime('%Y-%m-%d--%H%M%S')
+    # Transforming the start and end datetimes into dates only
+    other_parameters['Start Date'][0] = other_parameters['Start Date'][0].date()
+    other_parameters['End Date'][0] = other_parameters['End Date'][0].date()
+    # Using the excel writer object
+    with pd.ExcelWriter(f"Excel_Outputs/Output-{date_today}.xlsx") as writer:
+        # Writing the metrics into a excel sheet
+        metric_table.to_excel(writer,
+                             sheet_name='Metrics',
+                             index=False)
+        # Adding a sheet of the inputted stocks into the written excel sheet
+        stock_details_excel.to_excel(writer,
+                             sheet_name='Stocks Details',
+                             index=False)
+        # Adding a sheet of the other parameters given by the useer
+        other_parameters.to_excel(writer,
+                             sheet_name='Inputted Misc.',
+                             index=False)
+else:
+    error_df = pd.DataFrame({"ERROR": "OPTIMISATION WAS NOT SUCCESSFUL. CHECK INPUTS"},index=[1])
+    error_df.to_excel("Excel_Outputs/ERROR.xlsx",
+                     index=False)
 
 
 # In[ ]:
