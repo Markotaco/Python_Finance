@@ -4,3 +4,5 @@ This repository will aim to store two main analysis tools:
 2.) A tool to help one generate the optimal weights of a stock portfolio based on the highest Sharpe ratio
 
 Historical stock price data will be used as a proxy for the expected returns for a stock and the associated portfolio. Data is drawn from yfinance.
+
+DISCLAIMER: USAGE OF THE CODE IS AT ONE'S OWN RISK, AND DOES NOT CONSTITUTE AS FINANCIAL ADVICE. THE CODE AND AUTHOR SHALL NOT BE HELD LIABLE FOR ANY USER'S INVESTMENT DECISIONS AND CONSEQUENCES ARISING FROM SUCH DECISIONS.
